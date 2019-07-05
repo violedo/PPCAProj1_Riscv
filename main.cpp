@@ -1,15 +1,15 @@
 #include <iostream>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 using namespace std;
 
 int signed_extend(int data,int bits)
 {
     if (data&(1<<(bits-1)))
-        data|=0xffffffff>>bits<<bits;
+        data|=0xffffffff>>(bits-1)<<(bits-1);
     return data;
 }
-
 
 class Riscv{
 private:
@@ -66,6 +66,7 @@ private:
     Memory memory;
     pair<bool,unsigned int> x;
     int count=0;
+    int before=0;
 
     class Order{
     protected:
@@ -117,7 +118,6 @@ private:
                 if (rd==0)
                     return;
                 reg[rd]=imm;
-
             }
             else {
                 *pc=pc_context;
@@ -137,7 +137,7 @@ private:
         void ID(){
             rd=(ins>>7)&31;
             imm=(((ins>>12)&255)<<12)+(((ins>>20)&1)<<11)+(((ins>>21)&1023)<<1)+(((ins>>31)&1)<<20);
-            imm=signed_extend(imm,20);
+            imm=signed_extend(imm,21);
         }
 
         pair<bool,unsigned int> Ex(){
@@ -157,7 +157,6 @@ private:
             if (rd==0)
                 return;
             reg[rd]=rd_context;
-
         }
     };
     class I:public Order{
@@ -174,7 +173,7 @@ private:
             func3=(ins>>12)&7;
             rs1=(ins>>15)&31;
             imm=(ins>>20)&4095;
-            imm=signed_extend(imm,11);
+            imm=signed_extend(imm,12);
         }
 
         pair<bool,unsigned int> Ex(){
@@ -182,58 +181,78 @@ private:
                 case 0x67:{
                     pc_context=pc->write();
                     rd_context=pc_context+4;
-                    rs1_context=reg[rs1].write();
+                    if (rs1==0)
+                        rs1_context=0;
+                    else rs1_context=reg[rs1].write();
                     pc_context=rs1_context+imm;
-                    pc_context=pc_context>>1<<1;
+                    pc_context=(pc_context>>1)<<1;
                     break;
                 }
                 case 0x3:{
-                    rs1_context=reg[rs1].write();
+                    if (rs1==0)
+                        rs1_context=0;
+                    else rs1_context=reg[rs1].write();
                     addr=rs1_context+imm;
                     break;
                 }
                 case 0x13:{
-                    switch ((ins>>12)&7){
+                    switch (func3){
                         case 0:{
-                            rs1_context=reg[rs1].write();
+                            if (rs1==0)
+                                rs1_context=0;
+                            else rs1_context=reg[rs1].write();
                             rd_context=imm+rs1_context;
                             break;
                         }
                         case 2:{
-                            rs1_context=reg[rs1].write();
-                            rd_context=(rs1<imm)?1:0;
+                            if (rs1==0)
+                                rs1_context=0;
+                            else rs1_context=reg[rs1].write();
+                            rd_context=(rs1_context<imm)?1:0;
                             break;
                         }
                         case 3:{
-                            rs1_context=reg[rs1].write();
-                            rd_context=((unsigned int)rs1<(unsigned int)imm)?1:0;
+                            if (rs1==0)
+                                rs1_context=0;
+                            else rs1_context=reg[rs1].write();
+                            rd_context=((unsigned int)rs1_context<(unsigned int)imm)?1:0;
                             break;
                         }
                         case 4:{
-                            rs1_context=reg[rs1].write();
+                            if (rs1==0)
+                                rs1_context=0;
+                            else rs1_context=reg[rs1].write();
                             rd_context=rs1_context^imm;
                             break;
                         }
                         case 6:{
-                            rs1_context=reg[rs1].write();
+                            if (rs1==0)
+                                rs1_context=0;
+                            else rs1_context=reg[rs1].write();
                             rd_context=rs1_context|imm;
                             break;
                         }
                         case 7:{
-                            rs1_context=reg[rs1].write();
+                            if (rs1==0)
+                                rs1_context=0;
+                            else rs1_context=reg[rs1].write();
                             rd_context=rs1_context&imm;
                             break;
                         }
                         case 1:{
-                            rs1_context=reg[rs1].write();
+                            if (rs1==0)
+                                rs1_context=0;
+                            else rs1_context=reg[rs1].write();
                             rd_context=rs1_context<<imm;
                             break;
                         }
                         case 5:
-                            rs1_context=reg[rs1].write();
-                            if ((imm>>10)!=1)
+                            if (rs1==0)
+                                rs1_context=0;
+                            else rs1_context=reg[rs1].write();
+                            if ((imm>>9)==0)
                             {
-                                rd_context=(unsigned)rs1_context>>imm;
+                                rd_context=(unsigned int)rs1_context>>imm;
                             }
                             else {
                                 imm&=31;
@@ -254,7 +273,7 @@ private:
             switch (ins&127){
                 case 0x67:break;
                 case 0x3:{
-                    switch ((ins>>12)&7){
+                    switch (func3){
                         case 0:{
                             rd_context=(int)memory->operator[](addr);
                             rd_context=signed_extend(rd_context,8);
@@ -302,7 +321,6 @@ private:
                     break;
                 }
                 case 0x13:{
-
                     *pc+=4;
                     if (rd==0)
                         return;
@@ -323,57 +341,53 @@ private:
             rs1=(ins>>15)&31;
             rs2=(ins>>20)&31;
             imm=(((ins>>7)&1)<<11)+(((ins>>8)&15)<<1)+(((ins>>25)&63)<<5)+(((ins>>31)&1)<<12);
-            imm=signed_extend(imm,12);
+            imm=signed_extend(imm,13);
         }
 
         pair<bool,unsigned int> Ex(){
-            switch ((ins>>12)&7){
+            if (rs1==0)
+                rs1_context=0;
+            else rs1_context=reg[rs1].write();
+            if (rs2==0)
+                rs2_context=0;
+            else rs2_context=reg[rs2].write();
+            pc_context=pc->write();
+            switch (func3){
                 case 0:{
-                    rs1_context=reg[rs1].write();
-                    rs2_context=reg[rs2].write();
-                    pc_context=pc->write();
+
                     if (rs1_context==rs2_context)
                         pc_context+=imm;
+                    else pc_context+=4;
                     break;
                 }
                 case 1:{
-                    rs1_context=reg[rs1].write();
-                    rs2_context=reg[rs2].write();
-                    pc_context=pc->write();
                     if (rs1_context!=rs2_context)
                         pc_context+=imm;
+                    else pc_context+=4;
                     break;
                 }
                 case 4:{
-                    rs1_context=reg[rs1].write();
-                    rs2_context=reg[rs2].write();
-                    pc_context=pc->write();
                     if (rs1_context<rs2_context)
                         pc_context+=imm;
+                    else pc_context+=4;
                     break;
                 }
                 case 5:{
-                    rs1_context=reg[rs1].write();
-                    rs2_context=reg[rs2].write();
-                    pc_context=pc->write();
                     if (rs1_context>=rs2_context)
                         pc_context+=imm;
+                    else pc_context+=4;
                     break;
                 }
                 case 6:{
-                    rs1_context=reg[rs1].write();
-                    rs2_context=reg[rs2].write();
-                    pc_context=pc->write();
                     if ((unsigned int)rs1_context<(unsigned int)rs2_context)
                         pc_context+=imm;
+                    else pc_context+=4;
                     break;
                 }
                 case 7:{
-                    rs1_context=reg[rs1].write();
-                    rs2_context=reg[rs2].write();
-                    pc_context=pc->write();
                     if ((unsigned int)rs1_context>=(unsigned int)rs2_context)
                         pc_context+=imm;
+                    else pc_context+=4;
                     break;
                 }
             }
@@ -386,45 +400,7 @@ private:
         void MA(){}
 
         void WB(){
-            switch ((ins>>12)&7){
-                case 0:{
-                    if (rs1_context==rs2_context)
-                        *pc=pc_context;
-                    else *pc+=4;
-                    break;
-                }
-                case 1:{
-                    if (rs1_context!=rs2_context)
-                        *pc=pc_context;
-                    else *pc+=4;
-                    break;
-                }
-                case 4:{
-                    if (rs1_context<rs2_context)
-                        *pc=pc_context;
-                    else *pc+=4;
-                    break;
-                }
-                case 5:{
-
-                    if (rs1_context>=rs2_context)
-                        *pc=pc_context;
-                    else *pc+=4;
-                    break;
-                }
-                case 6:{
-                    if ((unsigned int)rs1_context<(unsigned int)rs2_context)
-                        *pc=pc_context;
-                    else *pc+=4;
-                    break;
-                }
-                case 7:{
-                    if ((unsigned int)rs1_context>=(unsigned int)rs2_context)
-                        *pc=pc_context;
-                    else *pc+=4;
-                    break;
-                }
-            }
+            *pc=pc_context;
         }
     };
     class S:public Order{
@@ -439,13 +415,17 @@ private:
             func3=(ins>>12)&7;
             rs1=(ins>>15)&31;
             rs2=(ins>>20)&31;
-            imm=((ins>>7)&31)+(((ins>>25)&63)<<5)+(((ins>>31)&1)<<11);
-            imm=signed_extend(imm,11);
+            imm=((ins>>7)&31)+(((ins>>25)&127)<<5);
+            imm=signed_extend(imm,12);
         }
 
         pair<bool,unsigned int> Ex(){
-            rs1_context=reg[rs1].write();
-            rs2_context=reg[rs2].write();
+            if (rs1==0)
+                rs1_context=0;
+            else rs1_context=reg[rs1].write();
+            if (rs2==0)
+                rs2_context=0;
+            else rs2_context=reg[rs2].write();
             addr=rs1_context+imm;
             pair<bool,unsigned int> res;
             res.first=0;
@@ -459,7 +439,7 @@ private:
         }
 
         void MA(){
-            switch ((ins>>12)&7) {
+            switch (func3) {
                 case 0:{
                     memory->change((rs2_context&255),addr);
                     break;
@@ -494,67 +474,105 @@ private:
             rs1=(ins>>15)&31;
             rs2=(ins>>20)&31;
             rd=(ins>>7)&31;
-            func7=(ins>>25);
+            func7=(ins>>25)&127;
         }
 
         pair<bool,unsigned int> Ex(){
-            switch ((ins>>12)&7){
+            switch (func3){
                 case 0:{
                     if (func7)
                     {
-                        rs2_context=reg[rs2].write();
-                        rs1_context=reg[rs1].write();
+                        if (rs1==0)
+                            rs1_context=0;
+                        else rs1_context=reg[rs1].write();
+                        if (rs2==0)
+                            rs2_context=0;
+                        else rs2_context=reg[rs2].write();
                         rd_context=rs1_context-rs2_context;
                     }
                     else {
-                        rs2_context=reg[rs2].write();
-                        rs1_context=reg[rs1].write();
+                        if (rs1==0)
+                            rs1_context=0;
+                        else rs1_context=reg[rs1].write();
+                        if (rs2==0)
+                            rs2_context=0;
+                        else rs2_context=reg[rs2].write();
                         rd_context=rs1_context+rs2_context;
                     }
                     break;
                 }
                 case 1:{
-                    rs2_context=reg[rs2].write();
-                    rs1_context=reg[rs1].write();
+                    if (rs1==0)
+                        rs1_context=0;
+                    else rs1_context=reg[rs1].write();
+                    if (rs2==0)
+                        rs2_context=0;
+                    else rs2_context=reg[rs2].write();
                     rd_context=rs1_context<<(rs2_context&31);
                     break;
                 }
                 case 2:{
-                    rs2_context=reg[rs2].write();
-                    rs1_context=reg[rs1].write();
+                    if (rs1==0)
+                        rs1_context=0;
+                    else rs1_context=reg[rs1].write();
+                    if (rs2==0)
+                        rs2_context=0;
+                    else rs2_context=reg[rs2].write();
                     rd_context=(rs1_context<rs2_context)?1:0;
                     break;
                 }
                 case 3:{
-                    rs2_context=reg[rs2].write();
-                    rs1_context=reg[rs1].write();
+                    if (rs1==0)
+                        rs1_context=0;
+                    else rs1_context=reg[rs1].write();
+                    if (rs2==0)
+                        rs2_context=0;
+                    else rs2_context=reg[rs2].write();
                     rd_context=((unsigned int)rs1_context<(unsigned int)rs2_context)?1:0;
                     break;
                 }
 
                 case 4:{
-                    rs2_context=reg[rs2].write();
-                    rs1_context=reg[rs1].write();
+                    if (rs1==0)
+                        rs1_context=0;
+                    else rs1_context=reg[rs1].write();
+                    if (rs2==0)
+                        rs2_context=0;
+                    else rs2_context=reg[rs2].write();
                     rd_context=rs1_context^rs2_context;
                     break;
                 }
                 case 5: {
-                    rs2_context=reg[rs2].write();
-                    rs1_context=reg[rs1].write();
+                    if (rs1==0)
+                        rs1_context=0;
+                    else rs1_context=reg[rs1].write();
+                    if (rs2==0)
+                        rs2_context=0;
+                    else rs2_context=reg[rs2].write();
                     if (func7)
                         rd_context=rs1_context>>(rs2_context&31);
-                    else rd_context=rs1_context>>(unsigned int)(rs2_context&31);
+                    else rd_context=(unsigned int)rs1_context>>(rs2_context&31);
                     break;
                 }
                 case 6:{
-                    rs2_context=reg[rs2].write();
-                    rs1_context=reg[rs1].write();
+                    if (rs1==0)
+                        rs1_context=0;
+                    else rs1_context=reg[rs1].write();
+                    if (rs2==0)
+                        rs2_context=0;
+                    else rs2_context=reg[rs2].write();
                     rd_context=rs1_context|rs2_context;
+                    break;
                 }
                 case 7:{
-                    rs2_context=reg[rs2].write();
-                    rs1_context=reg[rs1].write();
+                    if (rs1==0)
+                        rs1_context=0;
+                    else rs1_context=reg[rs1].write();
+                    if (rs2==0)
+                        rs2_context=0;
+                    else rs2_context=reg[rs2].write();
                     rd_context=rs1_context&rs2_context;
+                    break;
                 }
 
             }
@@ -564,8 +582,7 @@ private:
             return res;
         }
 
-        void MA(){
-        }
+        void MA(){}
 
         void WB(){
             *pc+=4;
@@ -582,6 +599,18 @@ private:
         return x;
     }
 
+    void test()
+    {
+        /*if (reg[10].write()!=before)
+        {
+            cout<<reg[10].write()<<' '<<count<<' '<<pc.write()<<endl;
+            before=reg[10].write();
+        }*/
+        cout<<count<<"   "<<pc.write()<<' '<<(int)memory[5860]<<' ';
+        for (int i=0;i<32;++i)
+            cout<<reg[i].write()<<' ';
+        cout<<endl;
+    }
 public:
 
     void run()
@@ -590,11 +619,12 @@ public:
         x.first=0;
         while (!x.first)
         {
+
             int order=IF();
             Order *p;
             int a=order&127;
-            if (count==126)
-                int x=1;
+            if (count==101)
+                int r=0;
             switch (a){
                 case 0x37:
                 case 0x17:p = new U(order,reg,&pc,&memory);break;
@@ -610,7 +640,8 @@ public:
             x=p->Ex();
             p->MA();
             p->WB();
-            cout<<reg[10].write()<<' '/*<<reg[15].write()*/<<' '<<++count<<endl;
+            //test();
+            ++count;
             delete p;
         }
 
@@ -623,16 +654,17 @@ public:
         int tmp;
         while (cin>>ch)
         {
-            if (ch=='@')
+            if ((ch>='0'&&ch<='9')||(ch>='A'&&ch<='F'))
             {
-                cin>>hex>>addr;
-            }
-            else {
                 cin>>hex>>tmp;
                 if (ch>='A'&&ch<='F')
                     tmp+=(ch-'A'+10)*16;
                 else tmp+=(ch-'0')*16;
                 memory.change(tmp,addr++);
+            }
+            else if (ch=='@')
+            {
+                cin>>hex>>addr;
             }
         }
     }
@@ -650,8 +682,18 @@ Riscv riscv;
 
 
 int main() {
-    freopen("array_test1.data", "r", stdin);
+    char n[20];
+    //strcpy(n,"basicopt1.data");
+    //strcpy(n,"bulgarian.data");
+    //strcpy(n,"magic.data");
+    strcpy(n,"pi.data");
+    //strcpy(n,"queens.data");
+    freopen(n, "r", stdin);
+    time_t start,ending;
+    start=time(NULL);
     riscv.get_memory();
     riscv.run();
+    ending=time(NULL);
+    cout<<"time spent "<<ending-start<<endl;
     return 0;
 }
