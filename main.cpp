@@ -60,13 +60,12 @@ private:
 
     };
 
-
     Reg reg[32];
     Reg pc;
     Memory memory;
-    pair<bool,unsigned int> x;
+
     int count=0;
-    int before=0;
+    //int before=0;
 
     class Order{
     protected:
@@ -593,12 +592,55 @@ private:
         }
     };
 
+    struct Ex_buffer{
+        bool ending;
+        unsigned int res;
+        Order* inst;
+    };
     int IF()
     {
         int x=(memory[pc.write()+3]<<24)+(memory[pc.write()+2]<<16)+(memory[pc.write()+1]<<8)+memory[pc.write()];
         return x;
     }
-
+    Order* ID(int order)
+    {
+        Order *p;
+        int a=order&127;
+        if (count==101)
+            int r=0;
+        switch (a){
+            case 0x37:
+            case 0x17:p = new U(order,reg,&pc,&memory);break;
+            case 0x6f:p=new J(order,reg,&pc,&memory);break;
+            case 0x67:p=new I(order,reg,&pc,&memory);break;
+            case 0x63:p=new B(order,reg,&pc,&memory);break;
+            case 0x3:p=new I(order,reg,&pc,&memory);break;
+            case 0x23:p=new S(order,reg,&pc,&memory);break;
+            case 0x13:p=new I(order,reg,&pc,&memory);break;
+            case 0x33:p=new R(order,reg,&pc,&memory);break;
+        }
+        p->ID();
+        return p;
+    }
+    Ex_buffer Ex(Order* p)
+    {
+        pair<bool,unsigned int> x=p->Ex();
+        Ex_buffer m;
+        m.inst=p;
+        m.res=x.second;
+        m.ending=x.first;
+        return m;
+    }
+    Order* MA(Order* p)
+    {
+        p->MA();
+        return p;
+    }
+    Order* WB(Order* p)
+    {
+        p->WB();
+        return p;
+    }
     void test()
     {
         /*if (reg[10].write()!=before)
@@ -615,37 +657,22 @@ public:
 
     void run()
     {
-
-        x.first=0;
-        while (!x.first)
+        Ex_buffer ex_buffer;
+        ex_buffer.ending=0;
+        while (!ex_buffer.ending)
         {
 
             int order=IF();
-            Order *p;
-            int a=order&127;
-            if (count==101)
-                int r=0;
-            switch (a){
-                case 0x37:
-                case 0x17:p = new U(order,reg,&pc,&memory);break;
-                case 0x6f:p=new J(order,reg,&pc,&memory);break;
-                case 0x67:p=new I(order,reg,&pc,&memory);break;
-                case 0x63:p=new B(order,reg,&pc,&memory);break;
-                case 0x3:p=new I(order,reg,&pc,&memory);break;
-                case 0x23:p=new S(order,reg,&pc,&memory);break;
-                case 0x13:p=new I(order,reg,&pc,&memory);break;
-                case 0x33:p=new R(order,reg,&pc,&memory);break;
-            }
-            p->ID();
-            x=p->Ex();
-            p->MA();
-            p->WB();
+            Order* ID_buffer=ID(order);
+            ex_buffer=Ex(ID_buffer);
+            Order* MA_buffer=MA(ex_buffer.inst);
+            Order* WB_buffer=WB(MA_buffer);
             //test();
             ++count;
-            delete p;
+            delete MA_buffer;
         }
 
-        cout<<x.second;
+        cout<<ex_buffer.res;
     }
     void get_memory()
     {
@@ -682,18 +709,33 @@ Riscv riscv;
 
 
 int main() {
-    char n[20];
-    //strcpy(n,"basicopt1.data");
-    //strcpy(n,"bulgarian.data");
-    //strcpy(n,"magic.data");
-    strcpy(n,"pi.data");
-    //strcpy(n,"queens.data");
+    /*char n[20];
+    strcpy(n,
+    // "basicopt1.data"
+    //"bulgarian.data"
+    // "magic.data"
+    "pi.data"
+    // "queens.data"
+    // "array_test1.data"
+    //"array_test2.data"
+    //"expr.data"
+    //"gcd.data"
+    //"hanoi.data"
+    //"lvalue2.data"
+    //"manyarguments.data"
+    //"multiarray.data"
+    //"naive.data"
+    //"qsort.data"
+    //"statement_test.data"
+    //"superloop.data"
+    //"tak.data"
+    );
     freopen(n, "r", stdin);
     time_t start,ending;
-    start=time(NULL);
+    start=time(NULL);*/
     riscv.get_memory();
     riscv.run();
-    ending=time(NULL);
-    cout<<"time spent "<<ending-start<<endl;
+    /*ending=time(NULL);
+    cout<<"time spent "<<ending-start<<endl;*/
     return 0;
 }
