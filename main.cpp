@@ -36,10 +36,12 @@ private:
     class Reg{
     private:
         int context;
+        int lock;
     public:
         Reg()
         {
             context=0;
+            lock=0;
         }
         int write()
         {
@@ -604,6 +606,8 @@ private:
     }
     Order* ID(int order)
     {
+        if (!order)
+            return NULL;
         Order *p;
         int a=order&127;
         if (count==101)
@@ -624,6 +628,14 @@ private:
     }
     Ex_buffer Ex(Order* p)
     {
+        if (!p)
+        {
+            Ex_buffer m;
+            m.inst=0;
+            m.res=0;
+            m.ending=0;
+            return m;
+        }
         pair<bool,unsigned int> x=p->Ex();
         Ex_buffer m;
         m.inst=p;
@@ -633,12 +645,14 @@ private:
     }
     Order* MA(Order* p)
     {
-        p->MA();
+        if (p)
+            p->MA();
         return p;
     }
     Order* WB(Order* p)
     {
-        p->WB();
+        if (p)
+            p->WB();
         return p;
     }
     void test()
@@ -648,7 +662,7 @@ private:
             cout<<reg[10].write()<<' '<<count<<' '<<pc.write()<<endl;
             before=reg[10].write();
         }*/
-        cout<<count<<"   "<<pc.write()<<' '<<(int)memory[5860]<<' ';
+        cout<<count<<"   "<<pc.write()<<' ';
         for (int i=0;i<32;++i)
             cout<<reg[i].write()<<' ';
         cout<<endl;
@@ -657,19 +671,21 @@ public:
 
     void run()
     {
+        int IF_inst=0;
         Ex_buffer ex_buffer;
+        Order* ID_buffer=NULL,*MA_buffer=NULL,*WB_buffer=NULL;
         ex_buffer.ending=0;
         while (!ex_buffer.ending)
         {
 
-            int order=IF();
-            Order* ID_buffer=ID(order);
+            IF_inst=IF();
+            ID_buffer=ID(IF_inst);
             ex_buffer=Ex(ID_buffer);
-            Order* MA_buffer=MA(ex_buffer.inst);
-            Order* WB_buffer=WB(MA_buffer);
+            MA_buffer=MA(ex_buffer.inst);
+            WB_buffer=WB(MA_buffer);
             //test();
             ++count;
-            delete MA_buffer;
+            delete WB_buffer;
         }
 
         cout<<ex_buffer.res;
@@ -709,7 +725,7 @@ Riscv riscv;
 
 
 int main() {
-    /*char n[20];
+    char n[20];
     strcpy(n,
     // "basicopt1.data"
     //"bulgarian.data"
@@ -732,10 +748,10 @@ int main() {
     );
     freopen(n, "r", stdin);
     time_t start,ending;
-    start=time(NULL);*/
+    start=time(NULL);
     riscv.get_memory();
     riscv.run();
-    /*ending=time(NULL);
-    cout<<"time spent "<<ending-start<<endl;*/
+    ending=time(NULL);
+    cout<<"  time spent  "<<ending-start<<endl;
     return 0;
 }
