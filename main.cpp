@@ -1051,7 +1051,7 @@ int main() {
     //"statement_test.data"
     //"superloop.data"
     //"tak.data"
-    );
+    //);
     //freopen(n, "r", stdin);
     //freopen("answer", "w", stdout);
     //time_t start,ending;
