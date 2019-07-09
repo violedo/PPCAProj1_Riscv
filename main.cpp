@@ -396,10 +396,9 @@ private:
         int jump_choice;
         int the_other;
     public:
-        B(int x,Reg* r,int p,Memory* m,Riscv* ri,int j,int t):Order(x,r,p,m,ri)
+        B(int x,Reg* r,int p,Memory* m,Riscv* ri,int j):Order(x,r,p,m,ri)
         {
             jump_choice=j;
-            the_other=t;
         }
 
         void ID(){
@@ -469,8 +468,8 @@ private:
             }
             pc_context=pc;
             int i;
-            for (i=0;i<1000;i++)
-            {
+            for (i=0;i<10000;i++)
+             {
                 if (!riscv->hash[(pc + i * i) % 12281].pc) {
                     riscv->hash[(pc + i * i) % 12281].pc = pc;
                     break;
@@ -479,20 +478,23 @@ private:
                     break;
             }
             if (!riscv->hash[(pc+i*i)%12281].jump)
-            {
-                riscv->hash[(pc+i*i)%12281].jump=pc_context+imm;
-                the_other=pc_context+imm;
-            }
+                riscv->hash[(pc+i*i)%12281].jump=pc+imm;
+            if (jump_choice==pc+4)
+                the_other=pc+imm;
+            if (jump_choice==pc+imm)
+                the_other=pc+4;
             switch (func3){
                 case 0:{
                     if (rs1_context==rs2_context)
                     {
                         pc_context+=imm;
-                        ++riscv->hash[(ins+i*i)%12281].predict;
+                        if (riscv->hash[(ins+i*i)%12281].predict<10)
+                            ++riscv->hash[(ins+i*i)%12281].predict;
                     }
                     else {
                         pc_context+=4;
-                        --riscv->hash[(ins+i*i)%12281].predict;
+                        if (riscv->hash[(ins+i*i)%12281].predict>-10)
+                            --riscv->hash[(ins+i*i)%12281].predict;
                     }
                     break;
                 }
@@ -500,11 +502,13 @@ private:
                     if (rs1_context!=rs2_context)
                     {
                         pc_context+=imm;
-                        ++riscv->hash[(ins+i*i)%12281].predict;
+                        if (riscv->hash[(ins+i*i)%12281].predict<10)
+                            ++riscv->hash[(ins+i*i)%12281].predict;
                     }
                     else {
                         pc_context+=4;
-                        --riscv->hash[(ins+i*i)%12281].predict;
+                        if (riscv->hash[(ins+i*i)%12281].predict>-10)
+                            --riscv->hash[(ins+i*i)%12281].predict;
                     }
                     break;
                 }
@@ -512,11 +516,13 @@ private:
                     if (rs1_context<rs2_context)
                     {
                         pc_context+=imm;
-                        ++riscv->hash[(ins+i*i)%12281].predict;
+                        if (riscv->hash[(ins+i*i)%12281].predict<10)
+                            ++riscv->hash[(ins+i*i)%12281].predict;
                     }
                     else {
                         pc_context+=4;
-                        --riscv->hash[(ins+i*i)%12281].predict;
+                        if (riscv->hash[(ins+i*i)%12281].predict>-10)
+                            --riscv->hash[(ins+i*i)%12281].predict;
                     }
                     break;
                 }
@@ -524,11 +530,13 @@ private:
                     if (rs1_context>=rs2_context)
                     {
                         pc_context+=imm;
-                        ++riscv->hash[(ins+i*i)%12281].predict;
+                        if (riscv->hash[(ins+i*i)%12281].predict<10)
+                            ++riscv->hash[(ins+i*i)%12281].predict;
                     }
                     else {
                         pc_context+=4;
-                        --riscv->hash[(ins+i*i)%12281].predict;
+                        if (riscv->hash[(ins+i*i)%12281].predict>-10)
+                            --riscv->hash[(ins+i*i)%12281].predict;
                     }
                     break;
                 }
@@ -536,11 +544,13 @@ private:
                     if ((unsigned int)rs1_context<(unsigned int)rs2_context)
                     {
                         pc_context+=imm;
-                        ++riscv->hash[(ins+i*i)%12281].predict;
+                        if (riscv->hash[(ins+i*i)%12281].predict<10)
+                            ++riscv->hash[(ins+i*i)%12281].predict;
                     }
                     else {
                         pc_context+=4;
-                        --riscv->hash[(ins+i*i)%12281].predict;
+                        if (riscv->hash[(ins+i*i)%12281].predict>-10)
+                            --riscv->hash[(ins+i*i)%12281].predict;
                     }
                     break;
                 }
@@ -548,11 +558,13 @@ private:
                     if ((unsigned int)rs1_context>=(unsigned int)rs2_context)
                     {
                         pc_context+=imm;
-                        ++riscv->hash[(ins+i*i)%12281].predict;
+                        if (riscv->hash[(ins+i*i)%12281].predict<10)
+                            ++riscv->hash[(ins+i*i)%12281].predict;
                     }
                     else {
                         pc_context+=4;
-                        --riscv->hash[(ins+i*i)%12281].predict;
+                        if (riscv->hash[(ins+i*i)%12281].predict>-10)
+                            --riscv->hash[(ins+i*i)%12281].predict;
                     }
                     break;
                 }
@@ -861,7 +873,7 @@ private:
         if ((id_buffer.ins&127)==0x63)
         {
             int i;
-            for (i=0;i<1000;i++)
+            for (i=0;i<10000;i++)
             {
                 if (!hash[(id_buffer.pc + i * i) % 12281].pc) {
                     hash[(id_buffer.pc + i * i) % 12281].pc = id_buffer.pc;
@@ -874,11 +886,9 @@ private:
             {
                 pc+=4;
                 id_buffer.jump_choice=pc.write();
-                id_buffer.the_other=hash[(id_buffer.pc + i * i) % 12281].jump;
             }
             else {
                 pc=hash[(id_buffer.pc + i * i) % 12281].jump;
-                id_buffer.the_other=pc.write();
                 id_buffer.jump_choice=hash[(id_buffer.pc + i * i) % 12281].jump;
             }
         }
@@ -898,7 +908,7 @@ private:
             case 0x17:p=new U(id_buffer.ins,reg,id_buffer.pc,&memory,this);break;
             case 0x6f:p=new J(id_buffer.ins,reg,id_buffer.pc,&memory,this);break;
             case 0x67:p=new I(id_buffer.ins,reg,id_buffer.pc,&memory,this);break;
-            case 0x63:p=new B(id_buffer.ins,reg,id_buffer.pc,&memory,this,id_buffer.jump_choice,id_buffer.the_other);break;
+            case 0x63:p=new B(id_buffer.ins,reg,id_buffer.pc,&memory,this,id_buffer.jump_choice);break;
             case 0x3:p=new I(id_buffer.ins,reg,id_buffer.pc,&memory,this);break;
             case 0x23:p=new S(id_buffer.ins,reg,id_buffer.pc,&memory,this);break;
             case 0x13:p=new I(id_buffer.ins,reg,id_buffer.pc,&memory,this);break;
@@ -1021,10 +1031,10 @@ public:
 Riscv riscv;
 
 int main() {
-    char n[20];
-    strcpy(n,
+    //char n[20];
+    //strcpy(n,
     //"basicopt1.data"
-    "bulgarian.data"
+    //"bulgarian.data"
     //"magic.data"
     //"pi.data"
     //"queens.data"
@@ -1041,15 +1051,15 @@ int main() {
     //"statement_test.data"
     //"superloop.data"
     //"tak.data"
-    );
-    freopen(n, "r", stdin);
+    //);
+    //freopen(n, "r", stdin);
     //freopen("answer", "w", stdout);
-    time_t start,ending;
-    start=time(NULL);
+    //time_t start,ending;
+    //start=time(NULL);
     riscv.get_memory();
     riscv.run();
-    ending=time(NULL);
-    cout<<"  time spent  "<<ending-start<<endl;
-    cout<<"prediction success times "<<predict_succ<<" prediction failure times "<<predict_fail<<" success rate "<<(predict_succ/(predict_fail+predict_succ)*100)<<'%'<<endl;
+    //ending=time(NULL);
+    //cout<<"  time spent  "<<ending-start<<endl;
+    //cout<<"prediction success times "<<predict_succ<<" prediction failure times "<<predict_fail<<" success rate "<<(predict_succ*100/(predict_fail+predict_succ))<<'%'<<endl;
     return 0;
 }
