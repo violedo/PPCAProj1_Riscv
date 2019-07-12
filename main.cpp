@@ -488,12 +488,12 @@ private:
                     if (rs1_context==rs2_context)
                     {
                         pc_context+=imm;
-                        if (riscv->hash[(pc+i*i)%12281].predict<2)
+                        if (riscv->hash[(pc+i*i)%12281].predict<5)
                             ++riscv->hash[(pc+i*i)%12281].predict;
                     }
                     else {
                         pc_context+=4;
-                        if (riscv->hash[(pc+i*i)%12281].predict>-1)
+                        if (riscv->hash[(pc+i*i)%12281].predict>-4)
                             --riscv->hash[(pc+i*i)%12281].predict;
                     }
                     break;
@@ -502,12 +502,12 @@ private:
                     if (rs1_context!=rs2_context)
                     {
                         pc_context+=imm;
-                        if (riscv->hash[(pc+i*i)%12281].predict<2)
+                        if (riscv->hash[(pc+i*i)%12281].predict<5)
                             ++riscv->hash[(pc+i*i)%12281].predict;
                     }
                     else {
                         pc_context+=4;
-                        if (riscv->hash[(pc+i*i)%12281].predict>-1)
+                        if (riscv->hash[(pc+i*i)%12281].predict>-4)
                             --riscv->hash[(pc+i*i)%12281].predict;
                     }
                     break;
@@ -516,12 +516,12 @@ private:
                     if (rs1_context<rs2_context)
                     {
                         pc_context+=imm;
-                        if (riscv->hash[(pc+i*i)%12281].predict<2)
+                        if (riscv->hash[(pc+i*i)%12281].predict<5)
                             ++riscv->hash[(pc+i*i)%12281].predict;
                     }
                     else {
                         pc_context+=4;
-                        if (riscv->hash[(pc+i*i)%12281].predict>-1)
+                        if (riscv->hash[(pc+i*i)%12281].predict>-4)
                             --riscv->hash[(pc+i*i)%12281].predict;
                     }
                     break;
@@ -530,12 +530,12 @@ private:
                     if (rs1_context>=rs2_context)
                     {
                         pc_context+=imm;
-                        if (riscv->hash[(pc+i*i)%12281].predict<2)
+                        if (riscv->hash[(pc+i*i)%12281].predict<5)
                             ++riscv->hash[(pc+i*i)%12281].predict;
                     }
                     else {
                         pc_context+=4;
-                        if (riscv->hash[(pc+i*i)%12281].predict>-1)
+                        if (riscv->hash[(pc+i*i)%12281].predict>-4)
                             --riscv->hash[(pc+i*i)%12281].predict;
                     }
                     break;
@@ -544,12 +544,12 @@ private:
                     if ((unsigned int)rs1_context<(unsigned int)rs2_context)
                     {
                         pc_context+=imm;
-                        if (riscv->hash[(pc+i*i)%12281].predict<2)
+                        if (riscv->hash[(pc+i*i)%12281].predict<5)
                             ++riscv->hash[(pc+i*i)%12281].predict;
                     }
                     else {
                         pc_context+=4;
-                        if (riscv->hash[(pc+i*i)%12281].predict>-1)
+                        if (riscv->hash[(pc+i*i)%12281].predict>-4)
                             --riscv->hash[(pc+i*i)%12281].predict;
                     }
                     break;
@@ -558,12 +558,12 @@ private:
                     if ((unsigned int)rs1_context>=(unsigned int)rs2_context)
                     {
                         pc_context+=imm;
-                        if (riscv->hash[(pc+i*i)%12281].predict<2)
+                        if (riscv->hash[(pc+i*i)%12281].predict<5)
                             ++riscv->hash[(pc+i*i)%12281].predict;
                     }
                     else {
                         pc_context+=4;
-                        if (riscv->hash[(pc+i*i)%12281].predict>-1)
+                        if (riscv->hash[(pc+i*i)%12281].predict>-4)
                             --riscv->hash[(pc+i*i)%12281].predict;
                     }
                     break;
@@ -1031,8 +1031,8 @@ public:
 Riscv riscv;
 
 int main() {
-    //char n[20];
-    //strcpy(n,
+    char n[20];
+    strcpy(n,
     //"basicopt1.data"
     //"bulgarian.data"
     //"magic.data"
@@ -1050,16 +1050,18 @@ int main() {
     //"qsort.data"
     //"statement_test.data"
     //"superloop.data"
-    //"tak.data"
-    //);
-    //freopen(n, "r", stdin);
-    //freopen("answer", "w", stdout);
-    //time_t start,ending;
-    //start=time(NULL);
+    "tak.data"
+    );
+    for (int i=0;i<18;++i)
+    freopen(n, "r", stdin);
+    freopen("answer", "a", stdout);
+    time_t start,ending;
+    start=time(NULL);
     riscv.get_memory();
+    cout<<n<<"  ";
     riscv.run();
-    //ending=time(NULL);
-    //cout<<"  time spent  "<<ending-start<<endl;
-    //cout<<"prediction success times "<<predict_succ<<" prediction failure times "<<predict_fail<<" success rate "<<(predict_succ*100/(predict_fail+predict_succ))<<'%'<<endl;
+    ending=time(NULL);
+    cout<<"  time spent  "<<ending-start;
+    cout<<"  prediction success times "<<predict_succ<<" prediction failure times "<<predict_fail<<" success rate "<<(predict_succ*100/(predict_fail+predict_succ))<<'%'<<endl;
     return 0;
 }
